@@ -102,23 +102,8 @@ function LeaveRequestModal({ onClose, onSave }) {
   );
 }
 
-function LeaveActionModal({ leave, onClose, onSave }) {
-    const { isAdmin } = useAuth();
-    const [loading, setLoading] = useState(false);
+function LeaveActionModal({ leave, onClose }) {
     const [remarks, setRemarks] = useState(leave.adminRemarks || '');
-
-    const handleAction = async (status) => {
-        setLoading(true);
-        try {
-            await leaveService.process(leave.id, { status, adminRemarks: remarks });
-            toast.success(`Request ${status.toLowerCase()}`);
-            onSave();
-        } catch (err) {
-            toast.error('Action failed');
-        } finally {
-            setLoading(false);
-        }
-    };
 
     return (
         <div className="modal-overlay" onClick={onClose}>
@@ -202,16 +187,6 @@ export default function Leaves() {
 
   useEffect(() => { fetchLeaves(); }, [fetchLeaves]);
 
-  const handleQuickAction = async (id, status) => {
-    try {
-        await leaveService.process(id, { status, adminRemarks: 'Quick action from dashboard' });
-        toast.success(`Request ${status.toLowerCase()}`);
-        fetchLeaves();
-    } catch (err) {
-        toast.error('Action failed');
-    }
-  };
-
   const getStatusBadge = (status) => {
     const map = { PENDING: 'badge-pending', APPROVED: 'badge-success', REJECTED: 'badge-terminated', CANCELLED: 'badge-inactive' };
     return <span className={`badge ${map[status]}`}>{status}</span>;
@@ -294,7 +269,7 @@ export default function Leaves() {
       </div>
 
       {showRequest && <LeaveRequestModal onClose={() => setShowRequest(false)} onSave={() => { setShowRequest(false); fetchLeaves(); }} />}
-      {selectedLeave && <LeaveActionModal leave={selectedLeave} onClose={() => setSelectedLeave(null)} onSave={() => { setSelectedLeave(null); fetchLeaves(); }} />}
+      {selectedLeave && <LeaveActionModal leave={selectedLeave} onClose={() => setSelectedLeave(null)} />}
     </div>
   );
 }
