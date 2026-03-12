@@ -15,7 +15,6 @@ const navItems = [
     section: 'Employee Management',
     items: [
       { path: '/employees', icon: '👤', label: 'Employees', roles: ['ADMIN', 'HR'] },
-      { path: '/pending-requests', icon: '⏳', label: 'Pending Approvals', roles: ['ADMIN'] },
       { path: '/pending-payrolls', icon: '📝', label: 'Payroll Approvals', roles: ['ADMIN'] },
       { path: '/payroll', icon: '💰', label: 'Payroll', roles: ['ADMIN', 'HR'] },
       { path: '/leaves', icon: '🌴', label: 'Leaves', roles: ['ADMIN', 'HR', 'EMPLOYEE'] },

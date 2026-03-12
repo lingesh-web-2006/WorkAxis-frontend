@@ -382,7 +382,6 @@ function AdminDashboard({ stats, deptData, pendingEmployees, announcements, onRe
                 <div className="card-title">Pending Employee Requests</div>
                 <div className="card-subtitle">{pendingEmployees.length} pending for approval</div>
              </div>
-             {isAdmin() && <Link to="/pending-requests" className="btn btn-secondary btn-sm" style={{ textDecoration: 'none' }}>View All ↗</Link>}
           </div>
           <div className="card-body" style={{ padding: 0 }}>
             {pendingEmployees.length > 0 ? (

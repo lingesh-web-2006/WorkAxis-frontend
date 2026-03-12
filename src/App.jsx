@@ -10,7 +10,6 @@ import Payroll from './pages/Payroll';
 import Reports from './pages/Reports';
 import Leaves from './pages/Leaves';
 import CompanyProfile from './pages/CompanyProfile';
-import PendingRequests from './pages/PendingRequests';
 import PendingPayrolls from './pages/PendingPayrolls';
 import { useAuth } from './context/AuthContext';
 import './index.css';
@@ -37,7 +36,6 @@ export default function App() {
             <Route path="/leaves" element={<Leaves />} />
             <Route path="/reports" element={<ProtectedRoute roles={['ADMIN', 'HR']}><Reports /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute roles={['ADMIN']}><CompanyProfile /></ProtectedRoute>} />
-            <Route path="/pending-requests" element={<ProtectedRoute roles={['ADMIN']}><PendingRequests /></ProtectedRoute>} />
             <Route path="/pending-payrolls" element={<ProtectedRoute roles={['ADMIN']}><PendingPayrolls /></ProtectedRoute>} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
