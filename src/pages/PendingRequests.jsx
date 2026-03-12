@@ -1,19 +1,24 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { employeeService } from '../services/api';
+import { employeeService, leaveService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
 export default function PendingRequests() {
   const [pendingEmployees, setPendingEmployees] = useState([]);
+  const [pendingLeaves, setPendingLeaves] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { isAdmin } = useAuth();
+  const { isAdmin, isHR } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
 
   const fetchPending = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await employeeService.getPending();
-      setPendingEmployees(res.data || []);
+      const [empRes, leaveRes] = await Promise.all([
+        employeeService.getPending(),
+        leaveService.getPending()
+      ]);
+      setPendingEmployees(empRes.data || []);
+      setPendingLeaves(leaveRes.data || []);
     } catch (err) {
       toast.error('Failed to load pending requests');
     } finally {
@@ -22,10 +27,10 @@ export default function PendingRequests() {
   }, []);
 
   useEffect(() => {
-    if (isAdmin()) {
+    if (isAdmin() || isHR()) {
       fetchPending();
     }
-  }, [isAdmin, fetchPending]);
+  }, [isAdmin, isHR, fetchPending]);
 
   const handleApprove = async (id) => {
     try {
@@ -47,6 +52,16 @@ export default function PendingRequests() {
     }
   };
 
+  const handleLeaveAction = async (id, status) => {
+    try {
+      await leaveService.process(id, { status, adminRemarks: 'Processed from dashboard' });
+      toast.success(`Leave request ${status.toLowerCase()}`);
+      fetchPending();
+    } catch (err) {
+      toast.error('Failed to process leave request');
+    }
+  };
+
   const getInitials = (name) => name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
   const filteredEmployees = pendingEmployees.filter(emp => 
@@ -55,12 +70,18 @@ export default function PendingRequests() {
     emp.department.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const filteredLeaves = pendingLeaves.filter(leave => 
+    leave.employeeName?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    leave.department?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    leave.leaveType?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="fade-in">
-      <div className="card">
+      <div className="card" style={{ marginBottom: '24px' }}>
         <div className="card-header">
           <div>
-            <div className="card-title">Pending Approvals</div>
+            <div className="card-title">Pending Employee Approvals</div>
             <div className="card-subtitle">{pendingEmployees.length} requests waiting for your review</div>
           </div>
           <div className="search-wrapper">
@@ -127,22 +148,104 @@ export default function PendingRequests() {
                       </div>
                     </td>
                     <td>
-                      <div className="flex gap-2">
-                        <button
-                          className="btn btn-success"
-                          style={{ padding: '6px 16px', fontSize: '13px' }}
-                          onClick={() => handleApprove(emp.id)}
-                        >
-                          Approve
-                        </button>
-                        <button
-                          className="btn btn-warning"
-                          style={{ padding: '6px 16px', fontSize: '13px' }}
-                          onClick={() => handleReject(emp.id)}
-                        >
-                          Reject
-                        </button>
+                      {isAdmin() && (
+                        <div className="flex gap-2">
+                          <button
+                            className="btn btn-success"
+                            style={{ padding: '6px 16px', fontSize: '13px' }}
+                            onClick={() => handleApprove(emp.id)}
+                          >
+                            Approve
+                          </button>
+                          <button
+                            className="btn btn-warning"
+                            style={{ padding: '6px 16px', fontSize: '13px' }}
+                            onClick={() => handleReject(emp.id)}
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <div className="card">
+        <div className="card-header">
+          <div>
+            <div className="card-title">Pending Leave Requests</div>
+            <div className="card-subtitle">{pendingLeaves.length} leave requests waiting for approval</div>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="loading-wrapper"><div className="spinner" /></div>
+        ) : filteredLeaves.length === 0 ? (
+          <div className="empty-state">
+            <span style={{ fontSize: '40px' }}>🌴</span>
+            <div className="empty-title">All caught up!</div>
+            <div className="empty-text">
+               {searchTerm ? 'No pending leave requests match your search.' : 'There are no pending leave requests at the moment.'}
+            </div>
+          </div>
+        ) : (
+          <div className="table-wrapper">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Employee Profile</th>
+                  <th>Leave Type</th>
+                  <th>Duration</th>
+                  <th>Reason</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredLeaves.map(leave => (
+                  <tr key={leave.id}>
+                    <td>
+                      <div className="flex items-center gap-3">
+                        <div className="avatar">{getInitials(leave.employeeName)}</div>
+                        <div>
+                          <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '14px' }}>{leave.employeeName}</div>
+                          <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{leave.department}</div>
+                        </div>
                       </div>
+                    </td>
+                    <td>
+                      <div style={{ fontWeight: 500, color: 'var(--accent-primary-hover)' }}>{leave.leaveType}</div>
+                    </td>
+                    <td>
+                      <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}><b>From:</b> {leave.startDate}</div>
+                      <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}><b>To:</b> {leave.endDate}</div>
+                    </td>
+                    <td style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <span title={leave.reason} style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{leave.reason}</span>
+                    </td>
+                    <td>
+                      {isAdmin() && (
+                        <div className="flex gap-2">
+                          <button
+                            className="btn btn-success"
+                            style={{ padding: '6px 16px', fontSize: '13px' }}
+                            onClick={() => handleLeaveAction(leave.id, 'APPROVED')}
+                          >
+                            Approve
+                          </button>
+                          <button
+                            className="btn btn-warning"
+                            style={{ padding: '6px 16px', fontSize: '13px' }}
+                            onClick={() => handleLeaveAction(leave.id, 'REJECTED')}
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}

@@ -170,12 +170,6 @@ function LeaveActionModal({ leave, onClose, onSave }) {
                 </div>
                 <div className="modal-footer">
                     <button className="btn btn-secondary" onClick={onClose}>Close</button>
-                    {leave.status === 'PENDING' && isAdmin() && (
-                        <div className="flex gap-2 ml-auto">
-                            <button className="btn btn-danger" onClick={() => handleAction('REJECTED')} disabled={loading}>Reject Request</button>
-                            <button className="btn btn-success" onClick={() => handleAction('APPROVED')} disabled={loading}>Approve Leave</button>
-                        </div>
-                    )}
                 </div>
             </div>
         </div>
@@ -283,24 +277,6 @@ export default function Leaves() {
                     </td>
                     <td className="text-right">
                         <div className="flex gap-2 justify-end">
-                             {l.status === 'PENDING' && (isAdmin() || isHR()) && (
-                                <>
-                                    <button 
-                                        className="btn btn-icon btn-success btn-sm" 
-                                        title="Quick Approve"
-                                        onClick={() => handleQuickAction(l.id, 'APPROVED')}
-                                    >
-                                        ✓
-                                    </button>
-                                    <button 
-                                        className="btn btn-icon btn-danger btn-sm" 
-                                        title="Quick Reject"
-                                        onClick={() => handleQuickAction(l.id, 'REJECTED')}
-                                    >
-                                        ✕
-                                    </button>
-                                </>
-                             )}
                              <button 
                                 className="btn btn-secondary btn-sm" 
                                 onClick={() => setSelectedLeave(l)}
