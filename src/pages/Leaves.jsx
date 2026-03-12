@@ -102,8 +102,23 @@ function LeaveRequestModal({ onClose, onSave }) {
   );
 }
 
-function LeaveActionModal({ leave, onClose }) {
+function LeaveActionModal({ leave, onClose, onSave }) {
+    const { isAdmin } = useAuth();
+    const [loading, setLoading] = useState(false);
     const [remarks, setRemarks] = useState(leave.adminRemarks || '');
+
+    const handleAction = async (status) => {
+        setLoading(true);
+        try {
+            await leaveService.process(leave.id, { status, adminRemarks: remarks });
+            toast.success(`Request ${status.toLowerCase()}`);
+            onSave();
+        } catch (err) {
+            toast.error('Action failed');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <div className="modal-overlay" onClick={onClose}>
@@ -155,6 +170,12 @@ function LeaveActionModal({ leave, onClose }) {
                 </div>
                 <div className="modal-footer">
                     <button className="btn btn-secondary" onClick={onClose}>Close</button>
+                    {leave.status === 'PENDING' && isAdmin() && (
+                        <div className="flex gap-2 ml-auto">
+                            <button className="btn btn-danger" onClick={() => handleAction('REJECTED')} disabled={loading}>Reject Request</button>
+                            <button className="btn btn-success" onClick={() => handleAction('APPROVED')} disabled={loading}>Approve Leave</button>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
@@ -186,6 +207,16 @@ export default function Leaves() {
   }, [isAdmin, isHR, user.id]);
 
   useEffect(() => { fetchLeaves(); }, [fetchLeaves]);
+
+  const handleQuickAction = async (id, status) => {
+    try {
+        await leaveService.process(id, { status, adminRemarks: 'Quick action from dashboard' });
+        toast.success(`Request ${status.toLowerCase()}`);
+        fetchLeaves();
+    } catch (err) {
+        toast.error('Action failed');
+    }
+  };
 
   const getStatusBadge = (status) => {
     const map = { PENDING: 'badge-pending', APPROVED: 'badge-success', REJECTED: 'badge-terminated', CANCELLED: 'badge-inactive' };
@@ -252,6 +283,24 @@ export default function Leaves() {
                     </td>
                     <td className="text-right">
                         <div className="flex gap-2 justify-end">
+                             {l.status === 'PENDING' && isAdmin() && (
+                                <>
+                                    <button 
+                                        className="btn btn-icon btn-success btn-sm" 
+                                        title="Quick Approve"
+                                        onClick={() => handleQuickAction(l.id, 'APPROVED')}
+                                    >
+                                        ✓
+                                    </button>
+                                    <button 
+                                        className="btn btn-icon btn-danger btn-sm" 
+                                        title="Quick Reject"
+                                        onClick={() => handleQuickAction(l.id, 'REJECTED')}
+                                    >
+                                        ✕
+                                    </button>
+                                </>
+                             )}
                              <button 
                                 className="btn btn-secondary btn-sm" 
                                 onClick={() => setSelectedLeave(l)}
@@ -269,7 +318,7 @@ export default function Leaves() {
       </div>
 
       {showRequest && <LeaveRequestModal onClose={() => setShowRequest(false)} onSave={() => { setShowRequest(false); fetchLeaves(); }} />}
-      {selectedLeave && <LeaveActionModal leave={selectedLeave} onClose={() => setSelectedLeave(null)} />}
+      {selectedLeave && <LeaveActionModal leave={selectedLeave} onClose={() => setSelectedLeave(null)} onSave={() => { setSelectedLeave(null); fetchLeaves(); }} />}
     </div>
   );
 }
